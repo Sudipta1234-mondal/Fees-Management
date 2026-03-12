@@ -916,9 +916,9 @@ export default function AdminPage() {
                                         </h2>
                                         <p className={`text-xs mt-0.5 ${c(isDark, 'text-blue-200/40', 'text-slate-400')}`}>{todayPayments.length} payment{todayPayments.length !== 1 ? 's' : ''} recorded</p>
                                     </div>
-                                    <div className={`flex items-center justify-between sm:block sm:text-right px-4 py-3 sm:px-3 sm:py-1.5 rounded-xl ${c(isDark, 'bg-emerald-500/10 border border-emerald-500/20', 'bg-emerald-50 border border-emerald-200')}`}>
-                                        <p className={`text-[11px] sm:text-[10px] uppercase tracking-wider font-semibold ${c(isDark, 'text-emerald-400/80', 'text-emerald-600')}`}>Total Collected</p>
-                                        <p className={`font-bold text-xl sm:text-lg leading-tight ${c(isDark, 'text-emerald-400', 'text-emerald-600')}`}>
+                                    <div className={`flex items-center justify-between sm:block sm:text-right px-4 py-3 sm:px-3 sm:py-1.5 rounded-xl ${c(isDark, 'bg-yellow-500/10 border border-yellow-500/20', 'bg-yellow-50 border border-yellow-200')}`}>
+                                        <p className={`text-[11px] sm:text-[10px] uppercase tracking-wider font-semibold ${c(isDark, 'text-yellow-400/80', 'text-yellow-600')}`}>Total Collected</p>
+                                        <p className={`font-bold text-xl sm:text-lg leading-tight ${c(isDark, 'text-yellow-400', 'text-yellow-600')}`}>
                                             ₹{todayPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)}
                                         </p>
                                     </div>
