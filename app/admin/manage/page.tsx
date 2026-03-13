@@ -46,9 +46,11 @@ function EditPanel({ isDark, title, items, onAdd, onRemove, onClose }: {
 }
 
 // ─── STUDENT MODAL ────────────────────────────────────────────────────────────
-function StudentModal({ isDark, student, onClose, onUpdate }: {
-    isDark: boolean; student: StudentDoc; onClose: () => void; onUpdate: () => void
+function StudentModal({ isDark, student, onClose, onUpdate, onRemove }: {
+    isDark: boolean; student: StudentDoc; onClose: () => void; onUpdate: () => void; onRemove: (uid: string) => Promise<void>
 }) {
+    const modalRouter = useRouter()
+    const [removing, setRemoving] = useState(false)
     const [fee, setFee] = useState(student.monthlyFee)
     const [records, setRecords] = useState<Record<string, { paid: boolean }>>({ ...student.feeRecords })
     const [saving, setSaving] = useState(false)
@@ -87,7 +89,8 @@ function StudentModal({ isDark, student, onClose, onUpdate }: {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-            <div className={`glass-card relative z-10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden ${c(isDark, 'bg-[#0b1530]/90', 'bg-white/85')}`} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className={`glass-card relative z-10 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden ${c(isDark, 'bg-[#0b1530]/90', 'bg-white/85')}`} style={{ maxHeight: '90vh', overflowY: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
+                <style>{`.glass-card::-webkit-scrollbar { display: none; }`}</style>
                 {/* Header */}
                 <div className={`sticky top-0 z-10 flex items-center justify-between px-6 py-4 ${c(isDark, 'bg-[#0b1530]/95 backdrop-blur-xl border-b border-white/10', 'bg-white/95 backdrop-blur-xl border-b border-slate-100')}`}>
                     <div>
@@ -171,12 +174,32 @@ function StudentModal({ isDark, student, onClose, onUpdate }: {
                             })}
                         </div>
                     </div>
-                    {/* Legend */}
-                    <div className={`flex flex-wrap items-center gap-4 text-xs pt-2 ${c(isDark, 'border-t border-white/6 text-blue-200/40', 'border-t border-slate-100 text-slate-400')}`}>
-                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500/60 border border-emerald-400" /> Paid</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500/50 border border-red-400" /> Due</span>
-                        <span className="flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-full border ${c(isDark, 'bg-white/10 border-white/10', 'bg-slate-200 border-slate-300')}`} /> Upcoming</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-yellow-500 border border-yellow-400" /> Current</span>
+
+                    {/* Remove Student Button */}
+                    <div className="pt-4 mt-2 border-t border-white/6">
+                        <button
+                            onClick={async () => {
+                                const confirmed = window.confirm(`Remove ${student.name} permanently?`)
+                                if (!confirmed) return
+                                setRemoving(true)
+                                try {
+                                    await onRemove(student.uid)
+                                    window.alert('Student removed successfully!')
+                                    onClose()
+                                    modalRouter.push('/admin')
+                                } catch (err) {
+                                    console.error(err)
+                                    window.alert('Failed to remove student.')
+                                } finally {
+                                    setRemoving(false)
+                                }
+                            }}
+                            disabled={removing}
+                            className="w-full flex flex-row items-center justify-center gap-2 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-50"
+                        >
+                            <svg className="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            {removing ? 'Removing...' : 'Remove Student'}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -434,10 +457,7 @@ export default function ManagePage() {
                                                     <svg className={`w-4 h-4 ${c(isDark, 'text-blue-200/20 group-hover:text-yellow-400', 'text-slate-300 group-hover:text-blue-500')} transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                                                 </div>
                                             </button>
-                                            <button onClick={() => removeStudent(student.uid)} title={`Remove ${student.name}`}
-                                                className="mr-2 sm:mr-4 w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all shrink-0">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                            </button>
+
                                         </div>
                                     )
                                 })}
@@ -447,7 +467,7 @@ export default function ManagePage() {
                 </section>
             )}
 
-            {activeStudent && <StudentModal isDark={isDark} student={activeStudent} onClose={() => setActiveStudent(null)} onUpdate={fetchStudents} />}
+            {activeStudent && <StudentModal isDark={isDark} student={activeStudent} onClose={() => setActiveStudent(null)} onUpdate={fetchStudents} onRemove={removeStudent} />}
 
             {/* Success Popup */}
             {successPopup && (
