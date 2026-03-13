@@ -160,7 +160,7 @@ function BottomNav() {
 
                 {/* Due */}
                 <button onClick={() => router.push('/admin/due')} className={`bottom-nav-item ${isDue ? 'active' : ''}`}>
-                    <span className={`text-2xl leading-none transition-all duration-200 ${isDue ? 'drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]' : ''}`}>⏰</span>
+                    <span className={`text-2xl leading-none transition-all duration-200 ${isDue ? 'drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]' : ''}`}>⏳</span>
                     <span className={`nav-label ${isDue ? 'text-red-400' : 'text-slate-400/60 hover:text-red-400'} transition-colors`}>Due</span>
                 </button>
             </div>
