@@ -64,7 +64,7 @@ export default function AdminHomePage() {
 
     return (
         <div className="view-container" key="home">
-            <HeroSection isDark={isDark} name={userData?.name || 'Shashthi'} />
+            <HeroSection isDark={isDark} name={userData?.name || 'Admin'} />
 
             {/* Stat Cards */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-6">
