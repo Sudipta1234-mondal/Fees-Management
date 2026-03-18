@@ -17,7 +17,9 @@ function Header({ onLogout }: { onLogout: () => void }) {
     const [pwMsg, setPwMsg] = useState('')
     const [pwErr, setPwErr] = useState('')
     const { userData } = useAuth()
-    const initials = userData?.name?.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase() || 'AD'
+    const initials = userData && userData.name 
+        ? userData.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase() 
+        : 'AD'
 
     async function handleChangePassword(e: React.FormEvent) {
         e.preventDefault()
@@ -176,14 +178,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         if (!loading && (!user || userData?.role !== 'admin')) {
-            router.push('/')
-        }
-        if (!loading && userData?.role === 'admin') {
+            router.replace('/')
+        } else if (!loading && userData?.role === 'admin') {
             setPageLoading(false)
         }
     }, [loading, user, userData, router])
 
-    if (pageLoading || loading) {
+    if (pageLoading || loading || !userData || userData.role !== 'admin') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-commerce">
                 <div className="text-center">

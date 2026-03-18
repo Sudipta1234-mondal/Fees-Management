@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { onAuthStateChanged, signOut, User } from 'firebase/auth'
+import { onAuthStateChanged, signOut, User, signInWithEmailAndPassword } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { useRouter } from 'next/navigation'
@@ -21,6 +21,7 @@ interface AuthContextType {
     user: User | null
     userData: UserData | null
     loading: boolean
+    login: (email:string, password:string) => Promise<void>
     logout: () => Promise<void>
 }
 
@@ -28,6 +29,7 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     userData: null,
     loading: true,
+    login: async () => { },
     logout: async () => { },
 })
 
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
+                setLoading(true)
                 setUser(firebaseUser)
                 try {
                     const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
@@ -52,7 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     } else {
                         setUserData(null)
                     }
-                } catch {
+                } catch (error) {
+                    console.error("Error fetching user data in AuthContext:", error)
                     setUserData(null)
                 }
             } else {
@@ -64,15 +68,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => unsub()
     }, [])
 
+    async function login(email:string, password:string) {
+        setLoading(true)
+        try {
+            const cred = await signInWithEmailAndPassword(auth, email, password)
+            // Immediately fetch profile so state is ready before we stop loading
+            const snap = await getDoc(doc(db, 'users', cred.user.uid))
+            if (snap.exists()) {
+                setUserData({ uid: cred.user.uid, ...snap.data() } as UserData)
+            }
+        } catch (error) {
+            setLoading(false)
+            throw error
+        }
+    }
+
     async function logout() {
-        await signOut(auth)
-        setUser(null)
-        setUserData(null)
-        router.push('/')
+        setLoading(true)
+        try {
+            await signOut(auth)
+            setUser(null)
+            setUserData(null)
+            router.replace('/')
+        } catch (error) {
+            console.error("Error signing out:", error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
-        <AuthContext.Provider value={{ user, userData, loading, logout }}>
+        <AuthContext.Provider value={{ user, userData, loading, login, logout }}>
             {children}
         </AuthContext.Provider>
     )

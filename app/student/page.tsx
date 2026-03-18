@@ -29,7 +29,7 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
     const [pwErr, setPwErr] = useState('')
 
     const initials = student?.name ? student.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : 'ST'
-    const dueCount = MONTH_KEYS.filter((k, i) => !student?.feeRecords?.[k]?.paid && (i + 1) < CURRENT_MONTH).length
+
 
     async function handleChangePassword(e: React.FormEvent) {
         e.preventDefault()
@@ -48,7 +48,7 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
 
     return (
         <>
-            <header className="w-full">
+            <header className="w-full relative z-50">
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-3">
                     <div className="glass-card flex items-center justify-between px-5 py-3 rounded-2xl bg-white/6 shadow-2xl">
                         <div className="flex items-center gap-3">
@@ -63,21 +63,9 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            {/* Notification Bell */}
-                            <button className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group bg-white/5 border border-white/10 hover:bg-white/10`}>
-                                <svg className="w-5 h-5 transition-colors text-blue-200/70 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                                </svg>
-                                {dueCount > 0 && (
-                                    <span className="notif-pulse absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-md">
-                                        {dueCount}
-                                    </span>
-                                )}
-                            </button>
-
+                        <div className="flex items-center gap-3 relative">
                             {/* Profile Button */}
-                            <button onClick={() => setProfileOpen(true)} className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-500/50 hover:border-yellow-400 transition-all duration-200 shadow-lg shrink-0 focus:outline-none">
+                            <button onClick={() => { setProfileOpen(true); }} className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-500/50 hover:border-yellow-400 transition-all duration-200 shadow-lg shrink-0 focus:outline-none">
                                 <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-gray-900 text-sm font-bold">
                                     {initials}
                                 </div>
@@ -314,61 +302,60 @@ function YearlyFeesGrid({ isDark, student }: { isDark: boolean; student: UserDat
             const autoTableDef = await import('jspdf-autotable')
             const autoTable = autoTableDef.default || (autoTableDef as any).autoTable || autoTableDef
 
-            const { doc: fdoc, getDoc } = await import('firebase/firestore')
-            const txRef = fdoc(db, 'transactions', `${student.uid}_${monthKey}_${CURRENT_YEAR}`)
+            const txRef = doc(db, 'transactions', `${student.uid}_${monthKey}_${CURRENT_YEAR}`)
             const txSnap = await getDoc(txRef)
             let paidDate = new Date()
             if (txSnap.exists() && txSnap.data().paidDate) {
                 paidDate = txSnap.data().paidDate.toDate()
             }
 
-            const doc = new jsPDF()
+            const receiptDoc = new jsPDF()
             const royalBlue = [0, 35, 102] as [number, number, number]
 
             // 1. Page Border (Double Line)
-            doc.setDrawColor(...royalBlue)
-            doc.setLineWidth(1)
-            doc.rect(10, 10, 190, 277) // Outer border
-            doc.setLineWidth(0.3)
-            doc.rect(12, 12, 186, 273) // Inner border
+            receiptDoc.setDrawColor(...royalBlue)
+            receiptDoc.setLineWidth(1)
+            receiptDoc.rect(10, 10, 190, 277) // Outer border
+            receiptDoc.setLineWidth(0.3)
+            receiptDoc.rect(12, 12, 186, 273) // Inner border
 
             // 2. Header Section
             // Main Title
-            doc.setTextColor(...royalBlue)
-            doc.setFont('times', 'bold')
-            doc.setFontSize(22)
-            doc.text('Payment Receipt', 105, 30, { align: 'center' })
+            receiptDoc.setTextColor(...royalBlue)
+            receiptDoc.setFont('times', 'bold')
+            receiptDoc.setFontSize(22)
+            receiptDoc.text('Payment Receipt', 105, 30, { align: 'center' })
 
             // 2. Meta Information
-            doc.setFont('helvetica', 'normal')
-            doc.setFontSize(10)
-            doc.setTextColor(50, 50, 50)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.setFontSize(10)
+            receiptDoc.setTextColor(50, 50, 50)
 
             const receiptNo = `BS-SD${student.uid.substring(student.uid.length - 4).toUpperCase()}`
             // Column 1
-            doc.setFont('helvetica', 'bold')
-            doc.text('RECEIPT NO.:', 20, 65)
-            doc.setFont('helvetica', 'normal')
-            doc.text(receiptNo, 50, 65)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('RECEIPT NO.:', 20, 65)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text(receiptNo, 50, 65)
 
-            doc.setFont('helvetica', 'bold')
-            doc.text('RECEIVED FROM:', 20, 75)
-            doc.setFont('helvetica', 'normal')
-            doc.text(student.name, 55, 75)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('RECEIVED FROM:', 20, 75)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text(student.name, 55, 75)
 
             // Column 2
-            doc.setFont('helvetica', 'bold')
-            doc.text('DATE:', 120, 65)
-            doc.setFont('helvetica', 'normal')
-            doc.text(paidDate.toLocaleDateString('en-GB'), 140, 65)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('DATE:', 120, 65)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text(paidDate.toLocaleDateString('en-GB'), 140, 65)
 
-            doc.setFont('helvetica', 'bold')
-            doc.text('BATCH:', 120, 75)
-            doc.setFont('helvetica', 'normal')
-            doc.text(`${student.area || ''}-${student.batch || ''}`, 140, 75)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('BATCH:', 120, 75)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text(`${student.area || ''}-${student.batch || ''}`, 140, 75)
 
             // 3. Billing Table
-            autoTable(doc, {
+            autoTable(receiptDoc, {
                 startY: 85,
                 margin: { left: 20, right: 20 },
                 head: [['DESCRIPTION', 'AMOUNT']],
@@ -388,38 +375,38 @@ function YearlyFeesGrid({ isDark, student }: { isDark: boolean; student: UserDat
             })
 
             // 5. Signature & Footer Section
-            const finalY = (doc as any).lastAutoTable?.finalY || 130
+            const finalY = (receiptDoc as any).lastAutoTable?.finalY || 130
 
             // Received By Placeholder
-            doc.setTextColor(50, 50, 50)
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(10)
-            doc.text('Received by: ', 120, finalY + 15)
-            doc.setDrawColor(150, 150, 150)
-            doc.setLineWidth(0.3)
-            doc.line(145, finalY + 16, 190, finalY + 16)
+            receiptDoc.setTextColor(50, 50, 50)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.setFontSize(10)
+            receiptDoc.text('Received by: ', 120, finalY + 15)
+            receiptDoc.setDrawColor(150, 150, 150)
+            receiptDoc.setLineWidth(0.3)
+            receiptDoc.line(145, finalY + 16, 190, finalY + 16)
 
-            doc.setTextColor(150, 150, 150)
-            doc.setFontSize(8)
-            doc.setFont('helvetica', 'normal')
-            doc.text('Digitally generated receipt. No physical signature required.', 105, finalY + 25, { align: 'center' })
+            receiptDoc.setTextColor(150, 150, 150)
+            receiptDoc.setFontSize(8)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text('Digitally generated receipt. No physical signature required.', 105, finalY + 25, { align: 'center' })
 
-            doc.setTextColor(...royalBlue)
-            doc.setFont('helvetica', 'bold')
-            doc.setFontSize(10)
-            doc.text('Thank you for your payment.', 105, finalY + 35, { align: 'center' })
+            receiptDoc.setTextColor(...royalBlue)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.setFontSize(10)
+            receiptDoc.text('Thank you for your payment.', 105, finalY + 35, { align: 'center' })
 
             const now = new Date()
             const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             const dateStr = now.toLocaleDateString('en-GB')
-            doc.setTextColor(150, 150, 150)
-            doc.setFontSize(7)
-            doc.setFont('helvetica', 'normal')
+            receiptDoc.setTextColor(150, 150, 150)
+            receiptDoc.setFontSize(7)
+            receiptDoc.setFont('helvetica', 'normal')
 
             // Timestamp positioned at the very bottom just inside the border
-            doc.text(`Downloaded on ${dateStr} at ${timeStr}`, 105, 280, { align: 'center' })
+            receiptDoc.text(`Downloaded on ${dateStr} at ${timeStr}`, 105, 280, { align: 'center' })
 
-            doc.save(`Receipt_${MONTH_NAMES[monthIdx]}_${student.name.replace(/\s+/g, '')}.pdf`)
+            receiptDoc.save(`Receipt_${MONTH_NAMES[monthIdx]}_${student.name.replace(/\s+/g, '')}.pdf`)
         } catch (err) {
             console.error('PDF error:', err)
             alert('Failed to generate receipt.')
@@ -511,26 +498,27 @@ export default function StudentPage() {
     const [studentData, setStudentData] = useState<UserData | null>(null)
     const [pageLoading, setPageLoading] = useState(true)
 
-    // Auth guard
     useEffect(() => {
         if (!loading && (!user || userData?.role !== 'student')) {
-            router.push('/')
+            router.replace('/')
             return
         }
         if (!loading && userData?.role === 'student') {
             // Fetch fresh data from Firestore
             async function fetchStudent() {
-                const snap = await getDoc(doc(db, 'users', user!.uid))
-                if (snap.exists()) {
-                    setStudentData({ uid: user!.uid, ...snap.data() } as UserData)
-                }
+                try {
+                    const snap = await getDoc(doc(db, 'users', user!.uid))
+                    if (snap.exists()) {
+                        setStudentData({ uid: user!.uid, ...snap.data() } as UserData)
+                    }
+                } catch(e) { console.error(e) }
                 setPageLoading(false)
             }
             fetchStudent()
         }
     }, [loading, user, userData, router])
 
-    if (pageLoading || loading || !studentData) {
+    if (pageLoading || loading || !studentData || studentData.role !== 'student') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-commerce">
                 <div className="text-center">

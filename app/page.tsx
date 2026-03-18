@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '@/lib/AuthContext'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -13,27 +11,15 @@ export default function LoginPage() {
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const authContext = useAuth()
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault()
         setError('')
         setLoading(true)
         try {
-            const cred = await signInWithEmailAndPassword(auth, email, password)
-            const snap = await getDoc(doc(db, 'users', cred.user.uid))
-            if (!snap.exists()) {
-                setError('User profile not found. Contact admin.')
-                setLoading(false)
-                return
-            }
-            const data = snap.data()
-            if (data.role === 'admin') {
-                router.push('/admin')
-            } else if (data.role === 'student') {
-                router.push('/student')
-            } else {
-                setError('Unknown role. Contact admin.')
-            }
+            await authContext.login(email, password)
+            // Redirect is handled by the useEffect below
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Login failed'
             if (msg.includes('invalid-credential') || msg.includes('wrong-password') || msg.includes('user-not-found')) {
@@ -41,9 +27,20 @@ export default function LoginPage() {
             } else {
                 setError(msg)
             }
+            setLoading(false)
         }
-        setLoading(false)
     }
+
+    // Handle redirection once auth is ready
+    useEffect(() => {
+        if (!authContext.loading && authContext.userData) {
+            if (authContext.userData.role === 'admin') {
+                router.replace('/admin')
+            } else if (authContext.userData.role === 'student') {
+                router.replace('/student')
+            }
+        }
+    }, [authContext.userData, authContext.loading, router])
 
     return (
         <div className="min-h-screen relative flex items-center justify-center p-4 bg-commerce">
