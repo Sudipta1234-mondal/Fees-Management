@@ -299,8 +299,6 @@ function YearlyFeesGrid({ isDark, student }: { isDark: boolean; student: UserDat
         setDownloading(monthKey)
         try {
             const { jsPDF } = await import('jspdf')
-            const autoTableDef = await import('jspdf-autotable')
-            const autoTable = autoTableDef.default || (autoTableDef as any).autoTable || autoTableDef
 
             const txRef = doc(db, 'transactions', `${student.uid}_${monthKey}_${CURRENT_YEAR}`)
             const txSnap = await getDoc(txRef)
@@ -309,102 +307,130 @@ function YearlyFeesGrid({ isDark, student }: { isDark: boolean; student: UserDat
                 paidDate = txSnap.data().paidDate.toDate()
             }
 
-            const receiptDoc = new jsPDF()
-            const royalBlue = [0, 35, 102] as [number, number, number]
-
-            // 1. Page Border (Double Line)
-            receiptDoc.setDrawColor(...royalBlue)
-            receiptDoc.setLineWidth(1)
-            receiptDoc.rect(10, 10, 190, 277) // Outer border
-            receiptDoc.setLineWidth(0.3)
-            receiptDoc.rect(12, 12, 186, 273) // Inner border
-
-            // 2. Header Section
-            // Main Title
-            receiptDoc.setTextColor(...royalBlue)
-            receiptDoc.setFont('times', 'bold')
-            receiptDoc.setFontSize(22)
-            receiptDoc.text('Payment Receipt', 105, 30, { align: 'center' })
-
-            // 2. Meta Information
-            receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.setFontSize(10)
-            receiptDoc.setTextColor(50, 50, 50)
-
-            const receiptNo = `BS-SD${student.uid.substring(student.uid.length - 4).toUpperCase()}`
-            // Column 1
-            receiptDoc.setFont('helvetica', 'bold')
-            receiptDoc.text('RECEIPT NO.:', 20, 65)
-            receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.text(receiptNo, 50, 65)
-
-            receiptDoc.setFont('helvetica', 'bold')
-            receiptDoc.text('RECEIVED FROM:', 20, 75)
-            receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.text(student.name, 55, 75)
-
-            // Column 2
-            receiptDoc.setFont('helvetica', 'bold')
-            receiptDoc.text('DATE:', 120, 65)
-            receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.text(paidDate.toLocaleDateString('en-GB'), 140, 65)
-
-            receiptDoc.setFont('helvetica', 'bold')
-            receiptDoc.text('BATCH:', 120, 75)
-            receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.text(`${student.area || ''}-${student.batch || ''}`, 140, 75)
-
-            // 3. Billing Table
-            autoTable(receiptDoc, {
-                startY: 85,
-                margin: { left: 20, right: 20 },
-                head: [['DESCRIPTION', 'AMOUNT']],
-                body: [
-                    [`Tuition Fee for ${MONTH_NAMES[monthIdx]} ${CURRENT_YEAR}`, `Rs ${student.monthlyFee}`]
-                ],
-                theme: 'grid',
-                headStyles: { fillColor: [220, 235, 255], textColor: royalBlue, fontStyle: 'bold' },
-                styles: { font: 'helvetica', fontSize: 10, lineColor: royalBlue, lineWidth: 0.1 },
-                foot: [['Total', `Rs ${student.monthlyFee}`]],
-                footStyles: { fillColor: [240, 240, 240], textColor: royalBlue, fontStyle: 'bold' },
-                willDrawCell: (data: any) => {
-                    if (data.section === 'foot' && data.column.index === 0) {
-                        data.cell.styles.halign = 'right'
-                    }
-                }
+            const receiptDoc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
             })
-
-            // 5. Signature & Footer Section
-            const finalY = (receiptDoc as any).lastAutoTable?.finalY || 130
-
-            // Received By Placeholder
-            receiptDoc.setTextColor(50, 50, 50)
+            
+            // Replicating image precisely
+            const darkBlue = [17, 48, 104] as [number, number, number]
+            
+            // 1. Top Wave Header
+            receiptDoc.setFillColor(...darkBlue)
+            receiptDoc.rect(0, 0, 210, 25, 'F')
+            receiptDoc.ellipse(50, 20, 100, 15, 'F')
+            
+            // 2. Logo (Circle with Book)
+            receiptDoc.setDrawColor(255, 255, 255)
+            receiptDoc.setLineWidth(1.5)
+            receiptDoc.setFillColor(55, 85, 170) // inner lighter blue
+            receiptDoc.circle(28, 25, 12, 'FD')
+            
+            // App SVG Icon
+            const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="%23FACC15" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>`
+            const img = new Image()
+            img.src = 'data:image/svg+xml;charset=utf-8,' + svgStr
+            await new Promise(resolve => { img.onload = resolve; img.onerror = resolve })
+            const canvas = document.createElement('canvas')
+            canvas.width = 64
+            canvas.height = 64
+            const ctx = canvas.getContext('2d')
+            if (ctx) ctx.drawImage(img, 0, 0, 64, 64)
+            receiptDoc.addImage(canvas.toDataURL('image/png'), 'PNG', 20, 17, 16, 16)
+            
+            // 3. Main Title
+            receiptDoc.setTextColor(255, 255, 255)
             receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.setFontSize(22)
+            receiptDoc.text('Fees Receipt', 195, 18, { align: 'right' })
+            
+            // 4. Receipt Details (Left) & Student Details (Right)
+            receiptDoc.setTextColor(0, 0, 0)
+            
+            // Left
+            receiptDoc.setFontSize(11)
+            receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('Receipt Details :', 50, 60, { align: 'center' })
+            
             receiptDoc.setFontSize(10)
-            receiptDoc.text('Received by: ', 120, finalY + 15)
-            receiptDoc.setDrawColor(150, 150, 150)
-            receiptDoc.setLineWidth(0.3)
-            receiptDoc.line(145, finalY + 16, 190, finalY + 16)
-
-            receiptDoc.setTextColor(150, 150, 150)
-            receiptDoc.setFontSize(8)
             receiptDoc.setFont('helvetica', 'normal')
-            receiptDoc.text('Digitally generated receipt. No physical signature required.', 105, finalY + 25, { align: 'center' })
-
-            receiptDoc.setTextColor(...royalBlue)
+            const shortUid = student.uid.substring(student.uid.length - 4).toUpperCase()
+            const receiptNo = `BSSD${CURRENT_YEAR}${monthKey.toUpperCase()}${shortUid}`
+            receiptDoc.text(`Receipt No: ${receiptNo}`, 50, 70, { align: 'center' })
+            const formattedDate = paidDate.toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'})
+            receiptDoc.text(`Date -${formattedDate}`, 50, 80, { align: 'center' })
+            
+            // Right
+            receiptDoc.setFontSize(12)
             receiptDoc.setFont('helvetica', 'bold')
+            receiptDoc.text('Student Details :', 160, 52, { align: 'center' })
+            
             receiptDoc.setFontSize(10)
-            receiptDoc.text('Thank you for your payment.', 105, finalY + 35, { align: 'center' })
-
-            const now = new Date()
-            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            const dateStr = now.toLocaleDateString('en-GB')
-            receiptDoc.setTextColor(150, 150, 150)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text(`Student Name - ${student.name}`, 160, 62, { align: 'center' })
+            receiptDoc.text(`Area Name - ${student.area || 'N/A'}`, 160, 70, { align: 'center' })
+            receiptDoc.text(`Batch - ${student.batch || 'N/A'}`, 160, 78, { align: 'center' })
+            
+            // 5. Main Table
+            // Header Row
+            receiptDoc.setFillColor(...darkBlue)
+            receiptDoc.rect(15, 105, 180, 12, 'F')
+            
+            receiptDoc.setTextColor(255, 255, 255)
+            receiptDoc.setFontSize(10)
+            receiptDoc.setFont('times', 'bold') // Using serif for table headers based on standard receipt look
+            receiptDoc.text('DESCRIPTION', 22, 113, { charSpace: 1 })
+            receiptDoc.text('MONTH/YEAR', 105, 113, { align: 'center', charSpace: 1 })
+            receiptDoc.text('AMOUNT', 165, 113, { align: 'center', charSpace: 1 })
+            
+            // Body Box
+            receiptDoc.setDrawColor(0, 0, 0)
+            receiptDoc.setLineWidth(0.2)
+            receiptDoc.rect(15, 117, 180, 40)
+            
+            // Table Content
+            receiptDoc.setTextColor(0, 0, 0)
+            receiptDoc.setFontSize(10)
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.text('Tuition Fees', 22, 125)
+            receiptDoc.text(`${MONTH_NAMES[monthIdx]} ${CURRENT_YEAR}`, 105, 125, { align: 'center' })
+            receiptDoc.text(`Rs.    ${student.monthlyFee}`, 165, 125, { align: 'center' })
+            
+            // 6. Total Row (Right-aligned under amount)
+            receiptDoc.setFillColor(...darkBlue)
+            receiptDoc.rect(115, 165, 80, 12, 'F')
+            
+            receiptDoc.setTextColor(255, 255, 255)
+            receiptDoc.setFont('times', 'bold')
+            receiptDoc.setFontSize(11)
+            receiptDoc.text('TOTAL:', 135, 173, { align: 'center', charSpace: 1 })
+            receiptDoc.text(`${student.monthlyFee}`, 165, 173, { align: 'center', charSpace: 1 })
+            
+            // 7. Terms and Conditions
+            receiptDoc.setTextColor(0, 0, 0)
+            receiptDoc.setFontSize(10)
+            receiptDoc.setFont('times', 'bold')
+            receiptDoc.text('TERM AND CONDITIONS:', 15, 230)
+            
+            receiptDoc.setFont('helvetica', 'normal')
+            receiptDoc.setFontSize(9)
+            receiptDoc.text('This is a system-generated receipt and no physical signature is required.', 15, 240)
+            receiptDoc.text('Thank you for your cooperation.', 15, 246)
+            
+            // 8. Bottom Footer Wave
+            receiptDoc.setFillColor(...darkBlue)
+            receiptDoc.rect(0, 275, 210, 22, 'F')
+            receiptDoc.ellipse(105, 275, 100, 8, 'F')
+            
+            // Timestamp in footer
+            receiptDoc.setTextColor(255, 255, 255)
             receiptDoc.setFontSize(7)
             receiptDoc.setFont('helvetica', 'normal')
-
-            // Timestamp positioned at the very bottom just inside the border
-            receiptDoc.text(`Downloaded on ${dateStr} at ${timeStr}`, 105, 280, { align: 'center' })
+            const now = new Date()
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }).toLowerCase()
+            const dateStr = now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'}).toLowerCase()
+            receiptDoc.text(`Downloaded on : ${dateStr}, ${timeStr}`, 195, 290, { align: 'right' })
 
             receiptDoc.save(`Receipt_${MONTH_NAMES[monthIdx]}_${student.name.replace(/\s+/g, '')}.pdf`)
         } catch (err) {
