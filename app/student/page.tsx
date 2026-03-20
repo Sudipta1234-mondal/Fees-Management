@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, UserData } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
 import { doc, getDoc } from 'firebase/firestore'
-import { db, auth } from '@/lib/firebase'
+import { getDb, auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -300,7 +300,7 @@ function YearlyFeesGrid({ isDark, student }: { isDark: boolean; student: UserDat
         try {
             const { jsPDF } = await import('jspdf')
 
-            const txRef = doc(db, 'transactions', `${student.uid}_${monthKey}_${CURRENT_YEAR}`)
+            const txRef = doc(getDb(), 'transactions', `${student.uid}_${monthKey}_${CURRENT_YEAR}`)
             const txSnap = await getDoc(txRef)
             let paidDate = new Date()
             if (txSnap.exists() && txSnap.data().paidDate) {
@@ -533,7 +533,7 @@ export default function StudentPage() {
             // Fetch fresh data from Firestore
             async function fetchStudent() {
                 try {
-                    const snap = await getDoc(doc(db, 'users', user!.uid))
+                    const snap = await getDoc(doc(getDb(), 'users', user!.uid))
                     if (snap.exists()) {
                         setStudentData({ uid: user!.uid, ...snap.data() } as UserData)
                     }

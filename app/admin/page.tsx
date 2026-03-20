@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/AuthContext'
-import { db } from '@/lib/firebase'
+import { getDb } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { CURRENT_YEAR, c } from './shared'
 
@@ -44,16 +44,17 @@ export default function AdminHomePage() {
 
     useEffect(() => {
         async function fetchStats() {
+
             setLoadingStats(true)
             try {
-                const areasSnap = await getDocs(collection(db, 'areas'))
+                const areasSnap = await getDocs(collection(getDb(), 'areas'))
                 let batchCount = 0
                 for (const areaDoc of areasSnap.docs) {
-                    const bSnap = await getDocs(collection(db, 'areas', areaDoc.id, 'batches'))
+                    const bSnap = await getDocs(collection(getDb(), 'areas', areaDoc.id, 'batches'))
                     batchCount += bSnap.size
                 }
                 setTotalBatches(batchCount)
-                const studentsQ = query(collection(db, 'users'), where('role', '==', 'student'))
+                const studentsQ = query(collection(getDb(), 'users'), where('role', '==', 'student'))
                 const studentsSnap = await getDocs(studentsQ)
                 setTotalStudents(studentsSnap.size)
             } catch (err) { console.error('Stats fetch error:', err) }

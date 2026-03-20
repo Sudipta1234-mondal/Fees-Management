@@ -35,9 +35,9 @@ export default function LoginPage() {
     useEffect(() => {
         if (!authContext.loading && authContext.userData) {
             if (authContext.userData.role === 'admin') {
-                router.replace('/admin')
+                router.replace('/admin/welcome')
             } else if (authContext.userData.role === 'student') {
-                router.replace('/student')
+                router.replace('/student/welcome')
             }
         }
     }, [authContext.userData, authContext.loading, router])

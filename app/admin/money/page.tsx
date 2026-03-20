@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { db } from '@/lib/firebase'
+import { getDb } from '@/lib/firebase'
 import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore'
 import { PaymentRecord, c } from '../shared'
 
@@ -14,6 +14,7 @@ export default function MoneyPage() {
 
     useEffect(() => {
         async function fetchPayments() {
+
             setLoadingPayments(true)
             try {
                 let startOfDay: Date, endOfDay: Date
@@ -26,7 +27,7 @@ export default function MoneyPage() {
                     startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
                     endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
                 }
-                const snap = await getDocs(query(collection(db, 'transactions'), where('paidDate', '>=', Timestamp.fromDate(startOfDay)), where('paidDate', '<=', Timestamp.fromDate(endOfDay))))
+                const snap = await getDocs(query(collection(getDb(), 'transactions'), where('paidDate', '>=', Timestamp.fromDate(startOfDay)), where('paidDate', '<=', Timestamp.fromDate(endOfDay))))
                 const records: PaymentRecord[] = snap.docs.map(d => {
                     const data = d.data()
                     return { studentName: data.studentName || 'Unknown', area: data.details?.split('-')[0] || '', batch: data.details?.split('-')[1] || '', amount: data.amount || 0, month: data.month || '', paidAt: data.paidDate?.toDate?.() || new Date() }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { db, secondaryAuth } from '@/lib/firebase'
+import { getDb, secondaryAuth } from '@/lib/firebase'
 import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where, Timestamp } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { StudentDoc, MONTH_KEYS, MONTH_NAMES, CURRENT_MONTH, CURRENT_YEAR, makeDefaultFeeRecords, c } from '../shared'
@@ -65,8 +65,8 @@ function StudentModal({ isDark, student, onClose, onUpdate, onRemove }: {
         setRecords(newRecords)
         setSaving(true)
         try {
-            await updateDoc(doc(db, 'users', student.uid), { feeRecords: newRecords })
-            const txDocRef = doc(db, 'transactions', `${student.uid}_${key}_${CURRENT_YEAR}`)
+            await updateDoc(doc(getDb(), 'users', student.uid), { feeRecords: newRecords })
+            const txDocRef = doc(getDb(), 'transactions', `${student.uid}_${key}_${CURRENT_YEAR}`)
             if (newPaidStatus) {
                 await setDoc(txDocRef, { studentName: student.name, details: `${student.area}-${student.batch}`, amount: student.monthlyFee, paidDate: Timestamp.now(), month: MONTH_NAMES[idx] })
             } else {
@@ -80,7 +80,7 @@ function StudentModal({ isDark, student, onClose, onUpdate, onRemove }: {
     async function saveFee() {
         setSaving(true)
         try {
-            await updateDoc(doc(db, 'users', student.uid), { monthlyFee: fee })
+            await updateDoc(doc(getDb(), 'users', student.uid), { monthlyFee: fee })
             onUpdate()
         } catch (err) { console.error(err) }
         setSaving(false)
@@ -227,8 +227,11 @@ export default function ManagePage() {
     // Fetch areas
     useEffect(() => {
         async function fetchAreas() {
-            const snap = await getDocs(collection(db, 'areas'))
-            setAreas(snap.docs.map(d => d.data().name as string))
+
+            try {
+                const snap = await getDocs(collection(getDb(), 'areas'))
+                setAreas(snap.docs.map(d => d.data().name as string))
+            } catch (e) { console.error('Error fetching areas:', e) }
         }
         fetchAreas()
     }, [])
@@ -236,12 +239,14 @@ export default function ManagePage() {
     // Fetch batches when area selected
     useEffect(() => {
         async function fetchBatches() {
-            if (!selectedArea) { setBatches([]); return }
-            const areasSnap = await getDocs(collection(db, 'areas'))
-            const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
-            if (!areaDoc) { setBatches([]); return }
-            const batchSnap = await getDocs(collection(db, 'areas', areaDoc.id, 'batches'))
-            setBatches(batchSnap.docs.map(d => d.data().name as string))
+            if (!selectedArea ) { setBatches([]); return } // Validation to ensure db is initialized
+            try {
+                const areasSnap = await getDocs(collection(getDb(), 'areas'))
+                const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
+                if (!areaDoc) { setBatches([]); return }
+                const batchSnap = await getDocs(collection(getDb(), 'areas', areaDoc.id, 'batches'))
+                setBatches(batchSnap.docs.map(d => d.data().name as string))
+            } catch (e) { console.error('Error fetching batches:', e) }
         }
         fetchBatches()
         setSelectedBatch('')
@@ -255,48 +260,60 @@ export default function ManagePage() {
     }, [selectedArea, selectedBatch])
 
     async function fetchStudents() {
-        if (!selectedArea || !selectedBatch) return
-        const q = query(collection(db, 'users'), where('role', '==', 'student'), where('area', '==', selectedArea), where('batch', '==', selectedBatch))
-        const snap = await getDocs(q)
-        setStudents(snap.docs.map(d => ({ uid: d.id, ...d.data() } as StudentDoc)))
+        if (!selectedArea || !selectedBatch) return // Validation check
+        try {
+            const q = query(collection(getDb(), 'users'), where('role', '==', 'student'), where('area', '==', selectedArea), where('batch', '==', selectedBatch))
+            const snap = await getDocs(q)
+            setStudents(snap.docs.map(d => ({ uid: d.id, ...d.data() } as StudentDoc)))
+        } catch (e) { console.error('Error fetching students:', e) }
     }
 
     // Area CRUD
     async function addArea(name: string) {
+
         const trimmed = name.trim()
         if (!trimmed || areas.includes(trimmed)) return
-        await setDoc(doc(collection(db, 'areas')), { name: trimmed })
-        setAreas(prev => [...prev, trimmed])
+        try {
+            await setDoc(doc(collection(getDb(), 'areas')), { name: trimmed })
+            setAreas(prev => [...prev, trimmed])
+        } catch (e) { console.error(e) }
     }
     async function removeArea(name: string) {
-        const snap = await getDocs(collection(db, 'areas'))
-        const areaDoc = snap.docs.find(d => d.data().name === name)
-        if (areaDoc) await deleteDoc(doc(db, 'areas', areaDoc.id))
-        setAreas(prev => prev.filter(a => a !== name))
-        if (selectedArea === name) { setSelectedArea(''); setSelectedBatch('') }
+
+        try {
+            const snap = await getDocs(collection(getDb(), 'areas'))
+            const areaDoc = snap.docs.find(d => d.data().name === name)
+            if (areaDoc) await deleteDoc(doc(getDb(), 'areas', areaDoc.id))
+            setAreas(prev => prev.filter(a => a !== name))
+            if (selectedArea === name) { setSelectedArea(''); setSelectedBatch('') }
+        } catch (e) { console.error(e) }
     }
 
     // Batch CRUD
     async function addBatch(name: string) {
-        if (!selectedArea) return
+        if (!selectedArea ) return
         const trimmed = name.trim()
         if (!trimmed || batches.includes(trimmed)) return
-        const areasSnap = await getDocs(collection(db, 'areas'))
-        const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
-        if (!areaDoc) return
-        await setDoc(doc(collection(db, 'areas', areaDoc.id, 'batches')), { name: trimmed })
-        setBatches(prev => [...prev, trimmed])
+        try {
+            const areasSnap = await getDocs(collection(getDb(), 'areas'))
+            const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
+            if (!areaDoc) return
+            await setDoc(doc(collection(getDb(), 'areas', areaDoc.id, 'batches')), { name: trimmed })
+            setBatches(prev => [...prev, trimmed])
+        } catch (e) { console.error(e) }
     }
     async function removeBatch(name: string) {
-        if (!selectedArea) return
-        const areasSnap = await getDocs(collection(db, 'areas'))
-        const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
-        if (!areaDoc) return
-        const batchSnap = await getDocs(collection(db, 'areas', areaDoc.id, 'batches'))
-        const batchDoc = batchSnap.docs.find(d => d.data().name === name)
-        if (batchDoc) await deleteDoc(doc(db, 'areas', areaDoc.id, 'batches', batchDoc.id))
-        setBatches(prev => prev.filter(b => b !== name))
-        if (selectedBatch === name) setSelectedBatch('')
+        if (!selectedArea ) return
+        try {
+            const areasSnap = await getDocs(collection(getDb(), 'areas'))
+            const areaDoc = areasSnap.docs.find(d => d.data().name === selectedArea)
+            if (!areaDoc) return
+            const batchSnap = await getDocs(collection(getDb(), 'areas', areaDoc.id, 'batches'))
+            const batchDoc = batchSnap.docs.find(d => d.data().name === name)
+            if (batchDoc) await deleteDoc(doc(getDb(), 'areas', areaDoc.id, 'batches', batchDoc.id))
+            setBatches(prev => prev.filter(b => b !== name))
+            if (selectedBatch === name) setSelectedBatch('')
+        } catch (e) { console.error(e) }
     }
 
     // Student CRUD
@@ -309,7 +326,7 @@ export default function ManagePage() {
             const username = trimmed.toLowerCase().replace(/\s+/g, '') + '@bs.com'
             const password = trimmed.toLowerCase().replace(/\s+/g, '') + '1234'
             const cred = await createUserWithEmailAndPassword(secondaryAuth, username, password)
-            await setDoc(doc(db, 'users', cred.user.uid), {
+            await setDoc(doc(getDb(), 'users', cred.user.uid), {
                 name: trimmed, email: username, username, password, role: 'student',
                 area: selectedArea, batch: selectedBatch, monthlyFee: 500, feeRecords: makeDefaultFeeRecords(),
             })
@@ -324,7 +341,7 @@ export default function ManagePage() {
     }
 
     async function removeStudent(uid: string) {
-        await deleteDoc(doc(db, 'users', uid))
+        await deleteDoc(doc(getDb(), 'users', uid))
         setStudents(prev => prev.filter(s => s.uid !== uid))
         if (activeStudent?.uid === uid) setActiveStudent(null)
     }

@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react'
-import { db } from '@/lib/firebase'
+import { getDb } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { c, MONTH_KEYS, MONTH_NAMES, StudentDoc } from '../shared'
 
@@ -11,9 +11,10 @@ export default function DuePage() {
 
     useEffect(() => {
         async function fetchDueStudents() {
+
             setLoading(true)
             try {
-                const studentsQ = query(collection(db, 'users'), where('role', '==', 'student'))
+                const studentsQ = query(collection(getDb(), 'users'), where('role', '==', 'student'))
                 const studentsSnap = await getDocs(studentsQ)
                 
                 const currentMonthIdx = new Date().getMonth()

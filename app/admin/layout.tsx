@@ -174,7 +174,10 @@ function BottomNav() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { user, userData, loading, logout } = useAuth()
     const router = useRouter()
+    const pathname = usePathname()
     const [pageLoading, setPageLoading] = useState(true)
+    
+    const isWelcomePage = pathname === '/admin/welcome'
 
     useEffect(() => {
         if (!loading && (!user || userData?.role !== 'admin')) {
@@ -197,11 +200,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     return (
         <div className="min-h-screen relative transition-all duration-500 bg-commerce">
-            <Header onLogout={logout} />
-            <main className="relative z-10 pb-28">
+            {!isWelcomePage && <Header onLogout={logout} />}
+            <main className={`relative z-10 ${isWelcomePage ? '' : 'pb-28'}`}>
                 {children}
             </main>
-            <BottomNav />
+            {!isWelcomePage && <BottomNav />}
         </div>
     )
 }

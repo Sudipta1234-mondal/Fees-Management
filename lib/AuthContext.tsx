@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { onAuthStateChanged, signOut, User, signInWithEmailAndPassword } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
-import { auth, db } from './firebase'
+import { auth, getDb } from './firebase'
 import { useRouter } from 'next/navigation'
 
 export interface UserData {
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setLoading(true)
                 setUser(firebaseUser)
                 try {
-                    const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
+                    const snap = await getDoc(doc(getDb(), 'users', firebaseUser.uid))
                     if (snap.exists()) {
                         setUserData({ uid: firebaseUser.uid, ...snap.data() } as UserData)
                     } else {
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const cred = await signInWithEmailAndPassword(auth, email, password)
             // Immediately fetch profile so state is ready before we stop loading
-            const snap = await getDoc(doc(db, 'users', cred.user.uid))
+            const snap = await getDoc(doc(getDb(), 'users', cred.user.uid))
             if (snap.exists()) {
                 setUserData({ uid: cred.user.uid, ...snap.data() } as UserData)
             }
