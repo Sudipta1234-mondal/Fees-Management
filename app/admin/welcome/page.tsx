@@ -86,21 +86,20 @@ export default function AdminWelcomePage() {
 
             <div className="relative z-10 w-full max-w-2xl text-center flex flex-col items-center">
                 <div className="flex flex-col items-center justify-center min-h-[140px]">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center relative flex-wrap text-center">
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 relative text-center">
                         <span className="whitespace-pre-wrap">
                             {baseText}
                             <span className="text-yellow-400">{adminText}</span>
+                            {showCursor && (
+                                <motion.span
+                                    animate={{ opacity: [1, 0, 1] }}
+                                    transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+                                    className="inline-block transform -translate-y-[2px] ml-[2px] font-light text-yellow-400"
+                                >
+                                    |
+                                </motion.span>
+                            )}
                         </span>
-                        
-                        {showCursor && (
-                            <motion.span
-                                animate={{ opacity: [1, 0, 1] }}
-                                transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
-                                className="inline-block transform -translate-y-[2px] ml-[2px] font-light text-yellow-400"
-                            >
-                                |
-                            </motion.span>
-                        )}
                     </h1>
 
                     <AnimatePresence>

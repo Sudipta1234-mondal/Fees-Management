@@ -30,7 +30,7 @@ export default function StudentWelcomePage() {
 
     useEffect(() => {
         if (!loading && userData && greeting) {
-            setFullText(`${greeting} ${userData.name || 'Student'}`)
+            setFullText(`${greeting}\n${userData.name || 'Student'}`)
             setIsTyping(true)
             setShowCursor(true)
         }
@@ -118,21 +118,20 @@ export default function StudentWelcomePage() {
 
             <div className="relative z-10 w-full max-w-2xl text-center flex flex-col items-center">
                 <div className="flex flex-col items-center justify-center min-h-[140px]">
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center relative flex-wrap text-center capitalize">
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 relative text-center capitalize">
                         <span className="whitespace-pre-wrap">
                             {baseText}
                             <span className="text-yellow-400">{studentText}</span>
+                            {showCursor && (
+                                <motion.span
+                                    animate={{ opacity: [1, 0, 1] }}
+                                    transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+                                    className="inline-block transform -translate-y-[2px] ml-[2px] font-light text-yellow-400 normal-case"
+                                >
+                                    |
+                                </motion.span>
+                            )}
                         </span>
-                        
-                        {showCursor && (
-                            <motion.span
-                                animate={{ opacity: [1, 0, 1] }}
-                                transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
-                                className="inline-block transform -translate-y-[2px] ml-[2px] font-light text-yellow-400 normal-case"
-                            >
-                                |
-                            </motion.span>
-                        )}
                     </h1>
 
                     <AnimatePresence>

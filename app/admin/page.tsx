@@ -6,8 +6,24 @@ import { useAuth } from '@/lib/AuthContext'
 import { getDb } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { CURRENT_YEAR, c } from './shared'
+import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
 
 // ─── HERO ────────────────────────────────────────────────────────────────────
+function AnimatedCounter({ value, className }: { value: number; className?: string }) {
+    const count = useMotionValue(0)
+    const rounded = useTransform(count, Math.round)
+
+    useEffect(() => {
+        const controls = animate(count, value, {
+            duration: 1.2,
+            ease: [0.22, 1, 0.36, 1] // smooth easeOutExpo curve for fast start, slow down
+        })
+        return controls.stop
+    }, [value, count])
+
+    return <motion.span className={className}>{rounded}</motion.span>
+}
+
 function HeroSection({ isDark, name }: { isDark: boolean; name: string }) {
     return (
         <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center">
@@ -77,13 +93,13 @@ export default function AdminHomePage() {
                         </div>
                         {loadingStats ? (
                             <>
-                                <div className="skeleton h-9 w-16 mx-auto mb-2" />
-                                <div className="skeleton h-3 w-24 mx-auto" />
+                                <div className="skeleton h-3 w-24 mx-auto mb-3" />
+                                <div className="skeleton h-10 w-16 mx-auto" />
                             </>
                         ) : (
                             <>
-                                <p className="font-bold text-3xl sm:text-4xl text-blue-400">{totalBatches}</p>
-                                <p className={`text-[10px] sm:text-xs uppercase tracking-wider mt-1.5 ${c(isDark, 'text-blue-200/40', 'text-slate-400')}`}>Total Batches</p>
+                                <p className={`text-xs sm:text-sm uppercase tracking-wider mb-2 font-bold ${c(isDark, 'text-blue-200/50', 'text-slate-500')}`}>Total Batches</p>
+                                <p className="font-extrabold text-5xl text-blue-500"><AnimatedCounter value={totalBatches} /></p>
                             </>
                         )}
                     </div>
@@ -95,13 +111,13 @@ export default function AdminHomePage() {
                         </div>
                         {loadingStats ? (
                             <>
-                                <div className="skeleton h-9 w-16 mx-auto mb-2" />
-                                <div className="skeleton h-3 w-24 mx-auto" />
+                                <div className="skeleton h-3 w-24 mx-auto mb-3" />
+                                <div className="skeleton h-10 w-16 mx-auto" />
                             </>
                         ) : (
                             <>
-                                <p className="font-bold text-3xl sm:text-4xl text-purple-400">{totalStudents}</p>
-                                <p className={`text-[10px] sm:text-xs uppercase tracking-wider mt-1.5 ${c(isDark, 'text-blue-200/40', 'text-slate-400')}`}>Total Students</p>
+                                <p className={`text-xs sm:text-sm uppercase tracking-wider mb-2 font-bold ${c(isDark, 'text-blue-200/50', 'text-slate-500')}`}>Total Students</p>
+                                <p className="font-extrabold text-5xl text-purple-500"><AnimatedCounter value={totalStudents} /></p>
                             </>
                         )}
                     </div>
