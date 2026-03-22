@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminWelcomePage() {
     const router = useRouter()
     const [greeting, setGreeting] = useState('')
+    const [displayedText, setDisplayedText] = useState('')
+    const [isTyping, setIsTyping] = useState(true)
+    const [showCursor, setShowCursor] = useState(true)
+    const [showTagline, setShowTagline] = useState(false)
+    const [showLoading, setShowLoading] = useState(false)
 
     useEffect(() => {
         const getGreeting = () => {
@@ -18,13 +23,59 @@ export default function AdminWelcomePage() {
             return 'Good Night'
         }
         setGreeting(getGreeting())
+    }, [])
 
-        const timeout = setTimeout(() => {
-            router.replace('/admin')
-        }, 3000)
+    const fullText = greeting ? `${greeting} Admin` : ''
 
-        return () => clearTimeout(timeout)
-    }, [router])
+    useEffect(() => {
+        if (!fullText) return;
+
+        let i = 0
+        let typingTimeout: NodeJS.Timeout
+
+        const typeNextChar = () => {
+            if (i < fullText.length) {
+                setDisplayedText(fullText.slice(0, i + 1))
+                i++
+                // Random delay between 80ms and 120ms to mimic human typing
+                const delay = Math.floor(Math.random() * (120 - 80 + 1)) + 80
+                typingTimeout = setTimeout(typeNextChar, delay)
+            } else {
+                setIsTyping(false)
+                setShowCursor(false)
+                setTimeout(() => setShowTagline(true), 500)
+            }
+        }
+
+        typingTimeout = setTimeout(typeNextChar, 100)
+
+        return () => clearTimeout(typingTimeout)
+    }, [fullText])
+
+    useEffect(() => {
+        if (fullText && !isTyping) {
+            const loadingTimeout = setTimeout(() => {
+                setShowLoading(true)
+            }, 1500)
+
+            return () => {
+                clearTimeout(loadingTimeout)
+            }
+        }
+    }, [fullText, isTyping])
+
+    useEffect(() => {
+        if (showLoading) {
+            const redirectTimeout = setTimeout(() => {
+                router.replace('/admin')
+            }, 3000)
+            return () => clearTimeout(redirectTimeout)
+        }
+    }, [showLoading, router])
+
+    const baseLen = greeting ? greeting.length + 1 : 0
+    const baseText = displayedText.slice(0, baseLen)
+    const adminText = displayedText.slice(baseLen)
 
     return (
         <div className="min-h-screen relative flex items-center justify-center p-4 bg-commerce overflow-hidden">
@@ -34,41 +85,55 @@ export default function AdminWelcomePage() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl" />
 
             <div className="relative z-10 w-full max-w-2xl text-center flex flex-col items-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                >
-                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex flex-col items-center gap-2">
-                        <span>{greeting}</span>
-                        <span className="text-yellow-400">Admin</span>
+                <div className="flex flex-col items-center justify-center min-h-[140px]">
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-3 flex items-center justify-center relative flex-wrap text-center">
+                        <span className="whitespace-pre-wrap">
+                            {baseText}
+                            <span className="text-yellow-400">{adminText}</span>
+                        </span>
+                        
+                        {showCursor && (
+                            <motion.span
+                                animate={{ opacity: [1, 0, 1] }}
+                                transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
+                                className="inline-block transform -translate-y-[2px] ml-[2px] font-light text-yellow-400"
+                            >
+                                |
+                            </motion.span>
+                        )}
                     </h1>
-                </motion.div>
 
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                    className="text-lg text-slate-400 italic tracking-wide mb-8"
-                >
-                    "Always Stay One Step Ahead"
-                </motion.p>
+                    <AnimatePresence>
+                        {showTagline && (
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.8, ease: 'easeOut' }}
+                                className="text-lg text-slate-400 italic tracking-wide mt-3"
+                            >
+                                "Always Stay One Step Ahead"
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </div>
                 
-                {/* Sleek animated CSS loading pulsing bar */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
-                >
-                    <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-yellow-500/0 via-yellow-500 to-yellow-500/0 animate-shimmer"
-                             style={{
-                                 width: '50%',
-                                 animation: 'pulse-slide 1.5s infinite ease-in-out'
-                             }}
-                        />
-                    </div>
-                </motion.div>
+                {/* Sleek animated loading pulsing bar */}
+                <AnimatePresence>
+                    {showLoading && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="mt-8 w-48 h-1 bg-white/10 rounded-full overflow-hidden"
+                        >
+                            <div className="h-full bg-gradient-to-r from-green-500/0 via-green-500 to-green-500/0"
+                                 style={{
+                                     width: '50%',
+                                     animation: 'pulse-slide 1.5s infinite ease-in-out'
+                                 }}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
             {/* Add global tailwind animation definition if not in tailwind config */}
             <style jsx global>{`
