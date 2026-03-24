@@ -6,6 +6,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
 import { c } from './shared'
+import NotificationHub from './components/NotificationHub'
+import CommerceCalculator from './components/CommerceCalculator'
 
 // ─── HEADER ──────────────────────────────────────────────────────────────────
 function Header({ onLogout }: { onLogout: () => void }) {
@@ -132,7 +134,12 @@ function Header({ onLogout }: { onLogout: () => void }) {
 }
 
 // ─── BOTTOM NAVIGATION ───────────────────────────────────────────────────────
-function BottomNav() {
+function BottomNav({ onToggleCalc, onToggleNotify, showCalc, showNotify }: {
+    onToggleCalc: () => void
+    onToggleNotify: () => void
+    showCalc: boolean
+    showNotify: boolean
+}) {
     const pathname = usePathname()
     const router = useRouter()
 
@@ -141,22 +148,42 @@ function BottomNav() {
     const isDue = pathname === '/admin/due'
 
     return (
-        <nav className="bottom-nav">
-            <div className="max-w-md mx-auto flex items-end justify-around px-4">
+        <nav className="bottom-nav relative">
+            <div className="max-w-md mx-auto flex items-center justify-around px-2 sm:px-4">
+                {/* Calculator */}
+                <button onClick={onToggleCalc} className={`bottom-nav-item ${showCalc ? 'active' : ''}`}>
+                    <span className={`flex items-center justify-center transition-all duration-200 ${showCalc ? 'drop-shadow-[0_0_10px_rgba(99,102,241,0.6)] text-indigo-400' : 'text-slate-400/80'}`}>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="4" y="2" width="16" height="20" rx="3" ry="3" strokeWidth="2" />
+                            <rect x="7" y="5" width="10" height="4" rx="1" ry="1" strokeWidth="1.5" />
+                            <circle cx="7.5" cy="13.5" r="1.5" fill="currentColor" />
+                            <circle cx="12" cy="13.5" r="1.5" fill="currentColor" />
+                            <circle cx="16.5" cy="13.5" r="1.5" fill="currentColor" />
+                            <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor" />
+                            <circle cx="12" cy="17.5" r="1.5" fill="currentColor" />
+                            <circle cx="16.5" cy="17.5" r="1.5" fill="currentColor" />
+                        </svg>
+                    </span>
+                    <span className={`nav-label ${showCalc ? 'text-indigo-400' : 'text-slate-400/60 hover:text-indigo-400'} transition-colors mt-0.5`}>Calculator</span>
+                </button>
+
                 {/* Money */}
                 <button onClick={() => router.push('/admin/money')} className={`bottom-nav-item ${isMoney ? 'active' : ''}`}>
                     <span className={`text-2xl leading-none transition-all duration-200 ${isMoney ? 'drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]' : ''}`}>💰</span>
                     <span className={`nav-label ${isMoney ? 'text-yellow-400' : 'text-slate-400/60'}`}>Money</span>
                 </button>
 
-                {/* Home (elevated) */}
-                <div className="flex flex-col items-center gap-1">
-                    <button onClick={() => router.push('/admin')} className={`bottom-nav-home ${isHome ? 'active' : ''}`}>
-                        <svg className="w-6 h-6" fill={isHome ? '#1f2937' : 'rgba(31,41,55,0.8)'} viewBox="0 0 24 24">
-                            <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
-                            <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15.75a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a.75.75 0 01.091-.086L12 5.432z" />
-                        </svg>
-                    </button>
+                {/* Home (elevated solid dome gap design) */}
+                <div className="flex flex-col items-center justify-end relative h-[48px]" style={{ minWidth: '76px' }}>
+                    <div className="absolute -top-[42px] w-[78px] h-[78px] flex items-center justify-center rounded-full dome-base pointer-events-none transition-colors"></div>
+                    <div className="absolute -top-[31px] z-10">
+                        <button onClick={() => router.push('/admin')} className={`bottom-nav-home relative z-10 ${isHome ? 'active' : ''}`}>
+                            <svg className="w-6 h-6" fill={isHome ? '#1f2937' : 'rgba(31,41,55,0.8)'} viewBox="0 0 24 24">
+                                <path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z" />
+                                <path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15.75a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a.75.75 0 01.091-.086L12 5.432z" />
+                            </svg>
+                        </button>
+                    </div>
                     <span className={`text-[10px] font-semibold tracking-wide ${isHome ? 'text-yellow-400' : 'text-slate-400/60'}`}>Home</span>
                 </div>
 
@@ -164,6 +191,12 @@ function BottomNav() {
                 <button onClick={() => router.push('/admin/due')} className={`bottom-nav-item ${isDue ? 'active' : ''}`}>
                     <span className={`text-2xl leading-none transition-all duration-200 ${isDue ? 'drop-shadow-[0_0_10px_rgba(239,68,68,0.6)]' : ''}`}>⏳</span>
                     <span className={`nav-label ${isDue ? 'text-red-400' : 'text-slate-400/60 hover:text-red-400'} transition-colors`}>Due</span>
+                </button>
+
+                {/* Notification */}
+                <button onClick={onToggleNotify} className={`bottom-nav-item ${showNotify ? 'active' : ''}`}>
+                    <span className={`text-2xl leading-none transition-all duration-200 ${showNotify ? 'drop-shadow-[0_0_10px_rgba(168,85,247,0.6)]' : ''}`}>🔔</span>
+                    <span className={`nav-label ${showNotify ? 'text-purple-400' : 'text-slate-400/60 hover:text-purple-400'} transition-colors`}>Notification</span>
                 </button>
             </div>
         </nav>
@@ -176,6 +209,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter()
     const pathname = usePathname()
     const [pageLoading, setPageLoading] = useState(true)
+    const [showCalculator, setShowCalculator] = useState(false)
+    const [showNotificationHub, setShowNotificationHub] = useState(false)
     
     const isWelcomePage = pathname === '/admin/welcome'
 
@@ -204,7 +239,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <main className={`relative z-10 ${isWelcomePage ? '' : 'pb-28'}`}>
                 {children}
             </main>
-            {!isWelcomePage && <BottomNav />}
+            {!isWelcomePage && (
+                <BottomNav
+                    onToggleCalc={() => setShowCalculator(prev => !prev)}
+                    onToggleNotify={() => setShowNotificationHub(prev => !prev)}
+                    showCalc={showCalculator}
+                    showNotify={showNotificationHub}
+                />
+            )}
+
+            {/* Notification Hub Modal */}
+            {showNotificationHub && (
+                <NotificationHub onClose={() => setShowNotificationHub(false)} />
+            )}
+
+            {/* Floating Commerce Calculator */}
+            {showCalculator && (
+                <CommerceCalculator onClose={() => setShowCalculator(false)} />
+            )}
         </div>
     )
 }

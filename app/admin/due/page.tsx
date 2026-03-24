@@ -11,14 +11,12 @@ export default function DuePage() {
 
     useEffect(() => {
         async function fetchDueStudents() {
-
             setLoading(true)
             try {
                 const studentsQ = query(collection(getDb(), 'users'), where('role', '==', 'student'))
                 const studentsSnap = await getDocs(studentsQ)
                 
                 const currentMonthIdx = new Date().getMonth()
-                // Strict: only months BEFORE the current month
                 const monthsToCheck = MONTH_KEYS.slice(0, currentMonthIdx)
                 
                 const dueList: any[] = []
@@ -47,7 +45,6 @@ export default function DuePage() {
                     }
                 })
                 
-                // Sorting A-Z by student name
                 dueList.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
                 setDueStudents(dueList)
             } catch (err) {
@@ -99,7 +96,7 @@ export default function DuePage() {
                             {dueStudents.map((student) => (
                                 <div key={student.id} className={`p-4 sm:p-5 flex border-b last:border-0 ${c(isDark, 'border-white/5 hover:bg-white/5', 'border-slate-100 hover:bg-slate-50')} transition-colors`}>
                                     <div className="flex-1 flex justify-between items-center w-full">
-                                        {/* Left Side: [Student Name] - ([Count] Months pill) and below it [Total Amount] ([Month Names]) */}
+                                        {/* Left Side */}
                                         <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-2">
                                                 <p className={`font-bold text-lg md:text-xl ${c(isDark, 'text-white', 'text-slate-800')}`}>
@@ -120,7 +117,7 @@ export default function DuePage() {
                                             </div>
                                         </div>
 
-                                        {/* Right Side: [Area], [Class] */}
+                                        {/* Right Side */}
                                         <div className="text-right flex flex-col items-end">
                                             <p className={`text-sm font-bold ${c(isDark, 'text-white/80', 'text-slate-700')}`}>
                                                 {student.area}
