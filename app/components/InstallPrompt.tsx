@@ -138,8 +138,8 @@ export default function InstallPrompt() {
                     </button>
 
                     {/* Subtle hint */}
-                    <p className="text-[11px] text-center" style={{ color: 'rgba(148,163,184,0.35)' }}>
-                        Works offline · No app store required
+                    <p className="text-[11px] text-center font-medium tracking-wide uppercase" style={{ color: 'rgba(148,163,184,0.4)' }}>
+                        Balance Sheet · Fees Management
                     </p>
                 </div>
             </div>
