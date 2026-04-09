@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
 import { c } from './shared'
 import NotificationHub from './components/NotificationHub'
-import CommerceCalculator from './components/CommerceCalculator'
+import AnalyticsHub from './components/AnalyticsHub'
 
 // ─── HEADER ──────────────────────────────────────────────────────────────────
 function Header({ onLogout }: { onLogout: () => void }) {
@@ -134,10 +134,10 @@ function Header({ onLogout }: { onLogout: () => void }) {
 }
 
 // ─── BOTTOM NAVIGATION ───────────────────────────────────────────────────────
-function BottomNav({ onToggleCalc, onToggleNotify, showCalc, showNotify }: {
-    onToggleCalc: () => void
+function BottomNav({ onToggleAnalytics, onToggleNotify, showAnalytics, showNotify }: {
+    onToggleAnalytics: () => void
     onToggleNotify: () => void
-    showCalc: boolean
+    showAnalytics: boolean
     showNotify: boolean
 }) {
     const pathname = usePathname()
@@ -150,21 +150,10 @@ function BottomNav({ onToggleCalc, onToggleNotify, showCalc, showNotify }: {
     return (
         <nav className="bottom-nav relative">
             <div className="max-w-md mx-auto flex items-center justify-around px-2 sm:px-4">
-                {/* Calculator */}
-                <button onClick={onToggleCalc} className={`bottom-nav-item ${showCalc ? 'active' : ''}`}>
-                    <span className={`flex items-center justify-center transition-all duration-200 ${showCalc ? 'drop-shadow-[0_0_10px_rgba(99,102,241,0.6)] text-indigo-400' : 'text-slate-400/80'}`}>
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <rect x="4" y="2" width="16" height="20" rx="3" ry="3" strokeWidth="2" />
-                            <rect x="7" y="5" width="10" height="4" rx="1" ry="1" strokeWidth="1.5" />
-                            <circle cx="7.5" cy="13.5" r="1.5" fill="currentColor" />
-                            <circle cx="12" cy="13.5" r="1.5" fill="currentColor" />
-                            <circle cx="16.5" cy="13.5" r="1.5" fill="currentColor" />
-                            <circle cx="7.5" cy="17.5" r="1.5" fill="currentColor" />
-                            <circle cx="12" cy="17.5" r="1.5" fill="currentColor" />
-                            <circle cx="16.5" cy="17.5" r="1.5" fill="currentColor" />
-                        </svg>
-                    </span>
-                    <span className={`nav-label ${showCalc ? 'text-indigo-400' : 'text-slate-400/60 hover:text-indigo-400'} transition-colors mt-0.5`}>Calculator</span>
+                {/* Analytics */}
+                <button onClick={onToggleAnalytics} className={`bottom-nav-item ${showAnalytics ? 'active' : ''}`}>
+                    <span className={`text-2xl leading-none transition-all duration-200 ${showAnalytics ? 'drop-shadow-[0_0_10px_rgba(99,102,241,0.6)]' : ''}`}>📊</span>
+                    <span className={`nav-label ${showAnalytics ? 'text-indigo-400' : 'text-slate-400/60 hover:text-indigo-400'} transition-colors mt-0.5`}>Analytics</span>
                 </button>
 
                 {/* Money */}
@@ -209,7 +198,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const router = useRouter()
     const pathname = usePathname()
     const [pageLoading, setPageLoading] = useState(true)
-    const [showCalculator, setShowCalculator] = useState(false)
+    const [showAnalytics, setShowAnalytics] = useState(false)
     const [showNotificationHub, setShowNotificationHub] = useState(false)
     
     const isWelcomePage = pathname === '/admin/welcome'
@@ -241,9 +230,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </main>
             {!isWelcomePage && (
                 <BottomNav
-                    onToggleCalc={() => setShowCalculator(prev => !prev)}
+                    onToggleAnalytics={() => setShowAnalytics(prev => !prev)}
                     onToggleNotify={() => setShowNotificationHub(prev => !prev)}
-                    showCalc={showCalculator}
+                    showAnalytics={showAnalytics}
                     showNotify={showNotificationHub}
                 />
             )}
@@ -253,9 +242,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <NotificationHub onClose={() => setShowNotificationHub(false)} />
             )}
 
-            {/* Floating Commerce Calculator */}
-            {showCalculator && (
-                <CommerceCalculator onClose={() => setShowCalculator(false)} />
+            {/* Analytics Hub */}
+            {showAnalytics && (
+                <AnalyticsHub onClose={() => setShowAnalytics(false)} />
             )}
         </div>
     )
