@@ -99,7 +99,7 @@ export default function InstallPrompt() {
                             Balance Sheet
                         </h2>
                         <p className="text-[13px] leading-relaxed font-medium" style={{ color: 'rgba(148,163,184,0.80)' }}>
-                            Add Balance Sheet to your home screen for the best experience and instant updates.
+                            Add Balance Sheet to your home screen for the best experience and instant updates
                         </p>
                     </div>
 
