@@ -63,7 +63,21 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 relative">
+                        <div className="flex items-center gap-4 relative">
+                            {/* Notification Bell */}
+                            <button 
+                                className="p-2 rounded-full text-blue-200/70 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 focus:outline-none shrink-0"
+                                aria-label="Notifications"
+                            >
+                                <div className="relative">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    {/* Static Placeholder Badge */}
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border-[1.5px] border-[#0a1428]" />
+                                </div>
+                            </button>
+
                             {/* Profile Button */}
                             <button onClick={() => { setProfileOpen(true); }} className="w-10 h-10 rounded-full overflow-hidden border-2 border-yellow-500/50 hover:border-yellow-400 transition-all duration-200 shadow-lg shrink-0 focus:outline-none">
                                 <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-gray-900 text-sm font-bold">
