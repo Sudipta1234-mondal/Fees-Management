@@ -62,6 +62,20 @@ export default function InstallPrompt() {
                     transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease',
                 }}
             >
+                {/* Close Button */}
+                <button
+                    onClick={() => {
+                        setVisible(false)
+                        setTimeout(() => setShow(false), 350)
+                    }}
+                    className="absolute top-4 right-4 z-10 p-2 rounded-full text-white/40 hover:text-white/90 hover:bg-white/10 transition-all cursor-pointer"
+                    aria-label="Close"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
                 {/* Top glow accent */}
                 <div
                     className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px"
