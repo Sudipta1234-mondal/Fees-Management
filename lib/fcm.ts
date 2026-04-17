@@ -14,6 +14,10 @@ export const requestNotificationPermission = async () => {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
+            if (VAPID_KEY === 'YOUR_ACTUAL_VAPID_KEY_HERE') {
+                console.error('FCM Token skipped: Please provide your actual VAPID key in lib/fcm.ts');
+                return null;
+            }
             const messaging = getMessaging(app);
             const token = await getToken(messaging, {
                 vapidKey: VAPID_KEY,

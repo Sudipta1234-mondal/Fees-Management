@@ -30,6 +30,15 @@ export default function LoginPage() {
             setLoading(false)
         }
     }
+    // Local storage check to prevent flicker
+    useEffect(() => {
+        const cachedRole = localStorage.getItem('userRole')
+        if (cachedRole) {
+            if (cachedRole === 'admin') router.replace('/admin/welcome')
+            else if (cachedRole === 'student') router.replace('/student/welcome')
+        }
+    }, [router])
+
     // Handle redirection once auth is ready
     useEffect(() => {
         if (!authContext.loading && authContext.userData) {
@@ -40,6 +49,11 @@ export default function LoginPage() {
             }
         }
     }, [authContext.userData, authContext.loading, router])
+
+    // While loading or if we have a cached role/user, show nothing (to avoid flicker)
+    if (authContext.loading || authContext.userData || (typeof window !== 'undefined' && localStorage.getItem('userRole'))) {
+        return <div className="min-h-screen bg-commerce" />
+    }
 
     return (
         <div className="min-h-screen relative flex items-center justify-center p-4 bg-commerce">

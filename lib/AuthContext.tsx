@@ -21,7 +21,7 @@ interface AuthContextType {
     user: User | null
     userData: UserData | null
     loading: boolean
-    login: (email:string, password:string) => Promise<void>
+    login: (email: string, password: string) => Promise<void>
     logout: () => Promise<void>
 }
 
@@ -51,7 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 try {
                     const snap = await getDoc(doc(getDb(), 'users', firebaseUser.uid))
                     if (snap.exists()) {
-                        setUserData({ uid: firebaseUser.uid, ...snap.data() } as UserData)
+                        const data = snap.data()
+                        setUserData({ uid: firebaseUser.uid, ...data } as UserData)
+                        if (data?.role) localStorage.setItem('userRole', data.role)
                     } else {
                         setUserData(null)
                     }
@@ -62,19 +64,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 setUser(null)
                 setUserData(null)
+                localStorage.removeItem('userRole')
             }
             setLoading(false)
         })
         return () => unsub()
     }, [])
 
-    async function login(email:string, password:string) {
+    async function login(email: string, password: string) {
         setLoading(true)
         try {
             const cred = await signInWithEmailAndPassword(auth, email, password)
             const snap = await getDoc(doc(getDb(), 'users', cred.user.uid))
             if (snap.exists()) {
-                setUserData({ uid: cred.user.uid, ...snap.data() } as UserData)
+                const data = snap.data()
+                setUserData({ uid: cred.user.uid, ...data } as UserData)
+                if (data?.role) localStorage.setItem('userRole', data.role)
             }
         } catch (error) {
             setLoading(false)
@@ -88,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await signOut(auth)
             setUser(null)
             setUserData(null)
+            localStorage.removeItem('userRole')
             router.replace('/')
         } catch (error) {
             console.error("Error signing out:", error)
