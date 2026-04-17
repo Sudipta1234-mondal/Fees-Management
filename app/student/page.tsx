@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { getDb, auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
+import { requestNotificationPermission } from '@/lib/fcm'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const CURRENT_MONTH = new Date().getMonth() + 1
@@ -702,6 +703,26 @@ export default function StudentPage() {
             fetchStudent()
         }
     }, [loading, user, userData, router])
+
+    // FCM Notification Setup
+    useEffect(() => {
+        if (!loading && userData?.role === 'student' && typeof window !== 'undefined') {
+            const setupNotifications = async () => {
+                try {
+                    const token = await requestNotificationPermission()
+                    if (token) {
+                        console.log('FCM Token generated:', token)
+                        await updateDoc(doc(getDb(), 'users', userData.uid), {
+                            fcmToken: token
+                        })
+                    }
+                } catch (err) {
+                    console.error('Failed to setup notifications:', err)
+                }
+            }
+            setupNotifications()
+        }
+    }, [loading, userData])
 
     if (pageLoading || loading || !studentData || studentData.role !== 'student') {
         return (

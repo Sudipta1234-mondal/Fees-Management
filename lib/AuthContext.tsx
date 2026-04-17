@@ -72,7 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(true)
         try {
             const cred = await signInWithEmailAndPassword(auth, email, password)
-            // Immediately fetch profile so state is ready before we stop loading
             const snap = await getDoc(doc(getDb(), 'users', cred.user.uid))
             if (snap.exists()) {
                 setUserData({ uid: cred.user.uid, ...snap.data() } as UserData)

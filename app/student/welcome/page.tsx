@@ -46,7 +46,6 @@ export default function StudentWelcomePage() {
             if (i < fullText.length) {
                 setDisplayedText(fullText.slice(0, i + 1))
                 i++
-                // Random delay between 80ms and 120ms to mimic human typing
                 const delay = Math.floor(Math.random() * (120 - 80 + 1)) + 80
                 typingTimeout = setTimeout(typeNextChar, delay)
             } else {
@@ -111,7 +110,6 @@ export default function StudentWelcomePage() {
 
     return (
         <div className="min-h-screen relative flex items-center justify-center p-4 bg-commerce overflow-hidden">
-            {/* Background decorations matching the login page theme */}
             <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
             <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500/8 rounded-full blur-3xl" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl" />
@@ -148,7 +146,6 @@ export default function StudentWelcomePage() {
                     </AnimatePresence>
                 </div>
                 
-                {/* Sleek animated loading pulsing bar */}
                 <AnimatePresence>
                     {showLoading && (
                         <motion.div

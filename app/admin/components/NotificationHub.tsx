@@ -101,6 +101,19 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
                     timestamp: serverTimestamp(),
                     isRead: false
                 })
+
+                // Trigger Push Notification if token exists
+                if (student.fcmToken) {
+                    fetch('/api/send-push', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            token: student.fcmToken,
+                            title: 'Fee Due Alert',
+                            body: message
+                        })
+                    }).catch(pushErr => console.error('Push notification failed for student:', student.id, pushErr))
+                }
             })
 
             await batch.commit()

@@ -30,7 +30,6 @@ export default function LoginPage() {
             setLoading(false)
         }
     }
-
     // Handle redirection once auth is ready
     useEffect(() => {
         if (!authContext.loading && authContext.userData) {
