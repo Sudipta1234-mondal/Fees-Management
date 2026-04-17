@@ -26,6 +26,7 @@ export interface StudentDoc {
     batch: string
     monthlyFee: number
     feeRecords: Record<string, { paid: boolean }>
+    fcmToken?: string
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────

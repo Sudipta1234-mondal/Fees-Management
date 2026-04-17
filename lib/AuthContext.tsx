@@ -111,21 +111,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 try {
                     // Pre-register service worker for FCM specifically
                     if ('serviceWorker' in navigator) {
-                        await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                            scope: '/firebase-cloud-messaging-push-scope',
-                        });
+                        try {
+                            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                                scope: '/firebase-cloud-messaging-push-scope',
+                            });
+                            console.log('FCM Service Worker active:', registration.scope);
+                        } catch (swErr) {
+                            console.warn('SW registration issue (might be expected in some envs):', swErr);
+                        }
                     }
 
                     const token = await requestNotificationPermission()
                     if (token) {
-                        await updateDoc(doc(getDb(), 'users', userData.uid), {
+                        // Only update if token is different or missing
+                        const userRef = doc(getDb(), 'users', userData.uid)
+                        await updateDoc(userRef, {
                             fcmToken: token,
                             lastTokenRefresh: serverTimestamp()
                         })
-                        console.log('FCM Token registered and saved.')
+                        console.log('%c🔔 FCM Token registered and saved to Firestore!', 'color: #22c55e; font-weight: bold;');
+                    } else {
+                        console.warn('FCM Token generation failed or was denied.');
                     }
                 } catch (err) {
-                    console.error('FCM Registration Error:', err)
+                    console.error('Critical failure in FCM setup:', err)
                 }
             }
             setupFCM()
