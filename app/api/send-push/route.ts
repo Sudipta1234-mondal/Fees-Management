@@ -30,6 +30,10 @@ export async function POST(request: Request) {
                 title,
                 body,
             },
+            data: {
+                title,
+                message: body,
+            },
             token,
             webpush: {
                 notification: {

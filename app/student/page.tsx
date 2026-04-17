@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { getDb, auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
-import { requestNotificationPermission } from '@/lib/fcm'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const CURRENT_MONTH = new Date().getMonth() + 1
@@ -704,41 +703,7 @@ export default function StudentPage() {
         }
     }, [loading, user, userData, router])
 
-    // FCM Notification Setup
-    useEffect(() => {
-        if (!loading && userData?.role === 'student' && typeof window !== 'undefined') {
-            const setupNotifications = async () => {
-                try {
-                    // Pre-register the specialized FCM worker if needed
-                    if ('serviceWorker' in navigator) {
-                        try {
-                            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                                scope: '/firebase-cloud-messaging-push-scope',
-                            });
-                            console.log('FCM Service Worker registered with scope:', registration.scope);
-                        } catch (err) {
-                            console.error('FCM Service Worker registration failed:', err);
-                        }
-                    }
 
-                    const token = await requestNotificationPermission()
-                    if (token) {
-                        console.log('FCM Token generated successfully:', token)
-                        await updateDoc(doc(getDb(), 'users', userData.uid), {
-                            fcmToken: token,
-                            lastTokenRefresh: serverTimestamp()
-                        })
-                        console.log('FCM Token saved to student document.')
-                    } else {
-                        console.warn('FCM Token generation returned null. Check VAPID key.')
-                    }
-                } catch (err) {
-                    console.error('Critical failure in FCM setup:', err)
-                }
-            }
-            setupNotifications()
-        }
-    }, [loading, userData])
 
     if (pageLoading || loading || !studentData || studentData.role !== 'student') {
         return (

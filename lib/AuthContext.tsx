@@ -5,6 +5,8 @@ import { onAuthStateChanged, signOut, User, signInWithEmailAndPassword } from 'f
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, getDb } from './firebase'
 import { useRouter } from 'next/navigation'
+import { requestNotificationPermission } from './fcm'
+import { updateDoc, serverTimestamp } from 'firebase/firestore'
 
 export interface UserData {
     uid: string
@@ -101,6 +103,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setLoading(false)
         }
     }
+
+    // Handle FCM Token Registration for Students
+    useEffect(() => {
+        if (!loading && userData?.role === 'student' && typeof window !== 'undefined') {
+            const setupFCM = async () => {
+                try {
+                    // Pre-register service worker for FCM specifically
+                    if ('serviceWorker' in navigator) {
+                        await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                            scope: '/firebase-cloud-messaging-push-scope',
+                        });
+                    }
+
+                    const token = await requestNotificationPermission()
+                    if (token) {
+                        await updateDoc(doc(getDb(), 'users', userData.uid), {
+                            fcmToken: token,
+                            lastTokenRefresh: serverTimestamp()
+                        })
+                        console.log('FCM Token registered and saved.')
+                    }
+                } catch (err) {
+                    console.error('FCM Registration Error:', err)
+                }
+            }
+            setupFCM()
+        }
+    }, [loading, userData])
 
     return (
         <AuthContext.Provider value={{ user, userData, loading, login, logout }}>

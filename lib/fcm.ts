@@ -1,9 +1,8 @@
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { app } from './firebase';
 
-// NOTE: Replace this with your actual VAPID key from the Firebase Console
-// Project Settings > Cloud Messaging > Web configuration > Web Push certificates
-export const VAPID_KEY = 'YOUR_ACTUAL_VAPID_KEY_HERE';
+// Web Push Certificate (VAPID Key) from Firebase Console
+export const VAPID_KEY = 'BCj6WXDGlx1xzwsPW9aINo90VEgh2LMdazkGsMeml5ZQPvkUqmpHcgbVASQ6k4lbf5W9zKqEGWHeiUBZC15PZKM';
 
 export const requestNotificationPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -14,10 +13,6 @@ export const requestNotificationPermission = async () => {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            if (VAPID_KEY === 'YOUR_ACTUAL_VAPID_KEY_HERE') {
-                console.error('FCM Token skipped: Please provide your actual VAPID key in lib/fcm.ts');
-                return null;
-            }
             const messaging = getMessaging(app);
             const token = await getToken(messaging, {
                 vapidKey: VAPID_KEY,
