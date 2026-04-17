@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { getDb } from '@/lib/firebase'
-import { collection, getDocs, query, where } from 'firebase/firestore'
+import { collection, getDocs, query, where, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore'
 import { c, MONTH_KEYS, MONTH_NAMES, StudentDoc } from '../shared'
 
 interface NotificationHubProps {
@@ -14,6 +14,7 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
     const [loading, setLoading] = useState(true)
     const [removedNormal, setRemovedNormal] = useState<Set<string>>(new Set())
     const [removedSpecial, setRemovedSpecial] = useState<Set<string>>(new Set())
+    const [sending, setSending] = useState(false)
 
     useEffect(() => {
         async function fetchDueStudents() {
@@ -73,14 +74,43 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
         setRemovedSpecial(prev => new Set(prev).add(id))
     }
 
-    function handleSendNotification(type: 'normal' | 'special') {
+    async function handleSendNotification(type: 'normal' | 'special') {
         const list = type === 'normal' ? normalDueStudents : specialDueStudents
         const label = type === 'normal' ? 'Normal Due' : 'Special Due'
+        
         if (list.length === 0) {
             alert(`No students in ${label} list to notify.`)
             return
         }
-        alert(`✅ Notification sent to ${list.length} student(s) in ${label} list!`)
+
+        setSending(true)
+        try {
+            const batch = writeBatch(getDb())
+            
+            list.forEach(student => {
+                const monthsStr = student.pendingMonthNames.join(', ')
+                const message = type === 'normal' 
+                    ? `Hello ${student.name}, your fees for ${monthsStr} is pending. Please clear the due soon.`
+                    : `Hello ${student.name}, you have multiple pending fees for [${monthsStr}]. Please clear them immediately.`
+                
+                const notifRef = doc(collection(getDb(), 'notifications'))
+                batch.set(notifRef, {
+                    studentId: student.id,
+                    title: 'Fee Due Alert',
+                    message,
+                    timestamp: serverTimestamp(),
+                    isRead: false
+                })
+            })
+
+            await batch.commit()
+            alert(`✅ Notification sent to ${list.length} student(s) in ${label} list!`)
+        } catch (err) {
+            console.error(err)
+            alert('Failed to send notifications. Check console for details.')
+        } finally {
+            setSending(false)
+        }
     }
 
     return (
@@ -198,8 +228,12 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
                                                 boxShadow: '0 4px 15px rgba(34,197,94,0.30)',
                                             }}
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                                            Send Notification
+                                            {sending ? (
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                                            )}
+                                            {sending ? 'Sending...' : 'Send Notification'}
                                         </button>
                                     </div>
                                 </div>
@@ -266,8 +300,12 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
                                                 boxShadow: '0 4px 15px rgba(239,68,68,0.30)',
                                             }}
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-                                            Send Notification
+                                            {sending ? (
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                                            )}
+                                            {sending ? 'Sending...' : 'Send Notification'}
                                         </button>
                                     </div>
                                 </div>

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth, UserData } from '@/lib/AuthContext'
 import { useRouter } from 'next/navigation'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, onSnapshot, orderBy, writeBatch, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { getDb, auth } from '@/lib/firebase'
 import { signInWithEmailAndPassword, updatePassword } from 'firebase/auth'
 
@@ -27,6 +27,89 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
     const [newPw, setNewPw] = useState('')
     const [pwMsg, setPwMsg] = useState('')
     const [pwErr, setPwErr] = useState('')
+    const [notifications, setNotifications] = useState<any[]>([])
+    const [unreadCount, setUnreadCount] = useState(0)
+    const [drawerOpen, setDrawerOpen] = useState(false)
+    const audioRef = useRef(typeof window !== 'undefined' ? new Audio('/Sounds/ting.mp3') : null)
+
+    // Bridge for Autoplay Policy
+    useEffect(() => {
+        const unlockAudio = () => {
+            if (audioRef.current) {
+                audioRef.current.play().then(() => {
+                    audioRef.current?.pause()
+                    audioRef.current!.currentTime = 0
+                }).catch(() => {})
+            }
+            window.removeEventListener('click', unlockAudio)
+            window.removeEventListener('touchstart', unlockAudio)
+        }
+        window.addEventListener('click', unlockAudio)
+        window.addEventListener('touchstart', unlockAudio)
+        return () => {
+            window.removeEventListener('click', unlockAudio)
+            window.removeEventListener('touchstart', unlockAudio)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!student?.uid) return
+
+        const q = query(
+            collection(getDb(), 'notifications'),
+            where('studentId', '==', student.uid)
+        )
+
+        const unsubscribe = onSnapshot(q, (snap) => {
+            const list: any[] = []
+            let unread = 0
+            snap.forEach(doc => {
+                const data = doc.data()
+                list.push({ id: doc.id, ...data })
+                if (!data.isRead) unread++
+            })
+
+            // Sort client-side
+            list.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0))
+
+            // Play sound for NEW notifications (last 10 seconds)
+            snap.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const data = change.doc.data()
+                    if (!data.isRead && data.timestamp) {
+                        const now = Date.now()
+                        const notifTime = data.timestamp.toMillis()
+                        if (now - notifTime < 10000) {
+                            console.log('Attempting to play sound...')
+                            audioRef.current?.play().catch(err => console.log('Audio play failed:', err))
+                        }
+                    }
+                }
+            })
+
+            setNotifications(list)
+            setUnreadCount(unread)
+        })
+
+        return () => unsubscribe()
+    }, [student?.uid])
+
+    async function handleOpenDrawer() {
+        setDrawerOpen(true)
+        if (unreadCount > 0) {
+            try {
+                const batch = writeBatch(getDb())
+                notifications.forEach(n => {
+                    if (!n.isRead) {
+                        batch.update(doc(getDb(), 'notifications', n.id), { isRead: true })
+                    }
+                })
+                await batch.commit()
+            } catch (err) {
+                console.error('Failed to mark as read:', err)
+            }
+        }
+    }
 
     const initials = student?.name ? student.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : 'ST'
 
@@ -64,8 +147,9 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
                         </div>
 
                         <div className="flex items-center gap-4 relative">
-                            {/* Notification Bell */}
-                            <button 
+                             {/* Notification Bell */}
+                             <button 
+                                onClick={handleOpenDrawer}
                                 className="p-2 rounded-full text-blue-200/70 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 focus:outline-none shrink-0"
                                 aria-label="Notifications"
                             >
@@ -73,8 +157,13 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                     </svg>
-                                    {/* Static Placeholder Badge */}
-                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 border-[1.5px] border-[#0a1428]" />
+                                    {/* Pulse Red Dot */}
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-[#0a1428]"></span>
+                                        </span>
+                                    )}
                                 </div>
                             </button>
 
@@ -127,6 +216,62 @@ function Header({ student, onLogout }: { student: UserData | null; onLogout: () 
                                 Log Out
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Notification Drawer */}
+            {drawerOpen && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setDrawerOpen(false)} />
+                    <div className="relative z-10 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]" 
+                        style={{ 
+                            background: '#0a1428', 
+                            border: '1px solid rgba(59,130,246,0.3)',
+                            boxShadow: '0 0 40px rgba(59,130,246,0.15)' 
+                        }}>
+                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-blue-900/20">
+                            <div>
+                                <h3 className="font-bold text-white">Notifications</h3>
+                                <p className="text-[10px] text-blue-300/50 uppercase tracking-widest">Recent Alerts</p>
+                            </div>
+                            <button onClick={() => setDrawerOpen(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors">
+                                <svg className="w-4 h-4 text-blue-200/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                            {notifications.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
+                                        <svg className="w-6 h-6 text-blue-400/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm text-blue-200/30">No notifications yet</p>
+                                </div>
+                            ) : (
+                                notifications.map(notif => (
+                                    <div key={notif.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/8 transition-colors">
+                                        <div className="flex justify-between items-start gap-2 mb-1">
+                                            <h4 className="font-bold text-sm text-yellow-500/90">{notif.title}</h4>
+                                            <span className="text-[10px] text-blue-200/30 font-medium whitespace-nowrap">
+                                                {notif.timestamp?.toDate().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-blue-100/70 leading-relaxed">{notif.message}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        
+                        {notifications.length > 0 && (
+                            <div className="p-4 border-t border-white/10 bg-blue-900/10">
+                                <p className="text-[10px] text-center text-blue-300/30 font-medium">Notifications are automatically marked as read</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
