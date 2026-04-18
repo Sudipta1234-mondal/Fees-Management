@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { getDb } from '@/lib/firebase'
-import { collection, getDocs, query, where, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore'
+import { collection, getDocs, query, where, addDoc, serverTimestamp, writeBatch, doc, getDoc, updateDoc, deleteField } from 'firebase/firestore'
 import { c, MONTH_KEYS, MONTH_NAMES, StudentDoc } from '../shared'
 
 interface NotificationHubProps {
@@ -87,7 +87,7 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
         try {
             const batch = writeBatch(getDb())
             
-            list.forEach(student => {
+            for (const student of list) {
                 const monthsStr = student.pendingMonthNames.join(', ')
                 const message = type === 'normal' 
                     ? `Hello ${student.name}, your fees for ${monthsStr} is pending. Please clear the due soon.`
@@ -102,19 +102,46 @@ export default function NotificationHub({ onClose }: NotificationHubProps) {
                     isRead: false
                 })
 
-                // Trigger Push Notification if token exists
-                if (student.fcmToken) {
-                    fetch('/api/send-push', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            token: student.fcmToken,
-                            title: 'Fee Due Alert',
-                            body: message
+                try {
+                    // Fetch latest fcmToken from /users/{studentId}
+                    const userDocRef = doc(getDb(), 'users', student.id)
+                    const userDocSnap = await getDoc(userDocRef)
+                    const token = userDocSnap.data()?.fcmToken
+
+                    if (token) {
+                        const apiResponse = await fetch('/api/send-notification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                token: token,
+                                title: 'Fee Due Alert',
+                                body: message
+                            })
                         })
-                    }).catch(pushErr => console.error('Push notification failed for student:', student.id, pushErr))
+                        
+                        if (!apiResponse.ok) {
+                            const errData = await apiResponse.json().catch(async () => {
+                                return { error: await apiResponse.text() }
+                            });
+                            console.error('FCM send failed:', JSON.stringify(errData));
+                            
+                            if (errData.isUnregistered) {
+                                console.warn(`Token UNREGISTERED for ${student.name}. Removing it...`);
+                                await updateDoc(userDocRef, {
+                                    fcmToken: deleteField()
+                                });
+                                console.log(`Deleted stale token for student ${student.id}`);
+                            }
+                        } else {
+                            console.log('FCM push successful for student:', student.id)
+                        }
+                    }
+                } catch (pushErr) {
+                    console.error('Push notification failed for student:', student.id, pushErr)
                 }
-            })
+            }
 
             await batch.commit()
             alert(`✅ Notification sent to ${list.length} student(s) in ${label} list!`)
