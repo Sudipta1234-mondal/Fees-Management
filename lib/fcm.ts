@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onMessage, deleteToken } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { app } from './firebase';
 
 // Web Push Certificate (VAPID Key) from Firebase Console
@@ -14,12 +14,6 @@ export const requestNotificationPermission = async () => {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             const messaging = getMessaging(app);
-            try {
-                // Force delete the potentially stale token from SW/DB binding
-                await deleteToken(messaging);
-            } catch (dtError) {
-                console.warn('Could not delete old token (may not exist):', dtError);
-            }
             const token = await getToken(messaging, {
                 vapidKey: VAPID_KEY,
             });
