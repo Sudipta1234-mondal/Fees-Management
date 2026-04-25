@@ -138,6 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             }
             setupFCM()
+
+            // 10-second keep-alive to prevent 'Death' of FCM connection
+            const keepAliveInterval = setInterval(async () => {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({ type: 'KEEP_ALIVE' });
+                }
+                // Silently re-register token to keep the connection fresh
+                try {
+                    const token = await requestNotificationPermission();
+                    if (token) {
+                        const userRef = doc(getDb(), 'users', userData.uid);
+                        await updateDoc(userRef, { lastTokenRefresh: serverTimestamp() });
+                    }
+                } catch (e) {
+                    console.warn('Keep-alive FCM ping failed:', e);
+                }
+            }, 10000);
+
+            return () => clearInterval(keepAliveInterval);
         }
     }, [loading, userData])
 

@@ -37,8 +37,8 @@ export async function POST(request: Request) {
             token,
             webpush: {
                 notification: {
-                    icon: '/icon-192.png',
-                    badge: '/icon-192.png',
+                    icon: '/logo.png',
+                    badge: '/logo.png',
                     click_action: '/', // URL to open when clicked
                 },
             },

@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken } from 'firebase/messaging';
 import { app } from './firebase';
 
 // Web Push Certificate (VAPID Key) from Firebase Console
@@ -28,10 +28,4 @@ export const requestNotificationPermission = async () => {
     }
 };
 
-export const onMessageListener = () =>
-    new Promise((resolve) => {
-        const messaging = getMessaging(app);
-        onMessage(messaging, (payload) => {
-            resolve(payload);
-        });
-    });
+
